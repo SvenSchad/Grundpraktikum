@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt  # plot
 import numpy as np
+import matplotlib.ticker as ticker
 from scipy.optimize import curve_fit
 import uncertainties.unumpy as unp
 
@@ -128,7 +129,7 @@ plt.plot(
     r_fit,
     P_fit,
     color="orange",
-    label="Stefan-Bolzmann-ist-fit",
+    label="Stefan-Bolzmann-fit",
     zorder=2,  # das wird als zweites geplottet das es schöner aussieht sehr wichtig
 )
 plt.xscale("symlog")
@@ -138,6 +139,11 @@ plt.ylabel("Leistung P [W]")
 plt.title("Fit des Stefan-Boltzmann-Gesetzes")
 plt.grid(True, which="both", linestyle="--", alpha=0.7)
 plt.legend()
+ax = plt.gca()
+ticks = ax.get_xticks()
+ax.set_xticks([t for t in ticks if t != 0])
+ax.xaxis.set_major_formatter(ticker.ScalarFormatter())
+ax.ticklabel_format(style='plain', axis='x')
 plt.show()
 
 print(f"Gefittete Fläche A = {A_fit:.3e} +- {A_err:.3e} m²")
@@ -173,4 +179,4 @@ A = unp.uarray(A_fit, A_err)
 x = np.power((rho_kohlefaden * A / (R[0] * 2 * np.pi**2)), 1 / 3)
 L = A / (2 * np.pi * x)
 print(f"Drahtradius = {unp.nominal_values(x):.3e} +- {unp.std_devs(x):.3e} m²")
-print(f"Drahtlänge = {unp.nominal_values(L):.3e} +- {unp.std_devs(L):.3e} m²")
+print(f"Drahtlänge = {unp.nominal_values(L):.3e} +- {unp.std_devs(L):.3e} m")
