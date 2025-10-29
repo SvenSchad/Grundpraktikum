@@ -1,12 +1,12 @@
 # Transistooooooooor Ronaldooooo
 import matplotlib.pyplot as plt
 import numpy as np
-
+import uncertainties.unumpy as unp
 
 U_ERR = 0.01
 I_ERR = 0.01 * 1e-3
 
-I_BE1 = 10e-6  # mykro amp
+I_BE1 = 10e-6 
 U_CE1 = np.array(
     [0.1, 0.2, 0.3, 0.4, 0.6, 0.97, 1.3, 5, 10, 15.1, 20.1, 25.1, 30, 35.1, 40.2]
 )
@@ -75,8 +75,7 @@ U_CE3 = np.array(
         20,
         30,
         40,
-    ]
-)
+    ])
 I_CE3 = np.array(
         [
             2.0,
@@ -179,7 +178,7 @@ def schabernack(u_ce, i_ce, i_be, color, zahl):
     p, cov = np.polyfit(u_ce, i_ce, 1, cov=True)
     m,c = p
     c_err = np.sqrt(np.diag(cov))
-
+    m1 = unp.uarray(m, c_err[0])
     x_fit = np.linspace(u_ce[0], u_ce[-1], 1000)
     y_fit = m * x_fit + c
     plt.plot(
@@ -194,7 +193,11 @@ def schabernack(u_ce, i_ce, i_be, color, zahl):
     plt.title("Kennlinienschaar")
     plt.grid(True)
     plt.legend()
-    print(f"r_CE{zahl}={m**(-1):.3e} [Ohm]")
+    print(f"r_CE{zahl}={m1**(-1):.3e} [Ohm]")
+    u_target = 10
+    i_target = np.interp(u_target, u_ce, i_ce)
+    b = i_target/i_be
+    print(f"Großsignalverstärkung B bei U_CE = 10V: {b:.4f}")
 
 
 schabernack(U_CE1, I_CE1, I_BE1, "green", 1)
