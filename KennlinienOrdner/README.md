@@ -1,1 +1,1 @@
-
+Ordner für Grundpraktikum Kennlinien von Sven Schad zum Versuch Kennlinien des Grundpraktikums Physik an der Uni Ulm am 17.10.2025. kennlinien 1&2 Beschäftigen sich mit dem Ersten Aufgabenteil, kennlinen3 mit dem zweiten und dritten, und kennlinen4 mit dem vierten.
