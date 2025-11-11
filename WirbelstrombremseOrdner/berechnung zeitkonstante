@@ -1,0 +1,120 @@
+# Wirbelstrombremse berechnung von Zeitkonstante tau
+import numpy as np
+import pandas as pd
+from scipy.optimize import brentq
+from uncertainties import unumpy as unp
+import os
+# Messdaten
+
+messdaten = pd.read_csv(
+    r"D:\UUlm\lol\Praktikum1b\Wirbelstrombremse\messdaten.csv",
+    names=[
+        "Winkel_grad",
+        "t2_gebremst_s",
+        "t1_ungebremst_s",
+    ],
+)
+
+gruppierteMessdaten = messdaten.groupby("Winkel_grad").agg(
+    # Durchschnittswerte
+    t1_mean_s=("t1_ungebremst_s", "mean"),
+    t2_mean_s=("t2_gebremst_s", "mean"),
+    # Standardabweichungen
+    t1_std_s=("t1_ungebremst_s", "std"),
+    t2_std_s=("t2_gebremst_s", "std"),
+)
+print(gruppierteMessdaten)
+
+# mit unsicherheiten
+t1_alpha = []
+t2_alpha = []
+for x in range(6):
+    t1_alpha.append(
+        unp.uarray(
+            gruppierteMessdaten.iloc[x]["t1_mean_s"],
+            gruppierteMessdaten.iloc[x]["t1_std_s"],
+        )
+    )
+    t2_alpha.append(
+        unp.uarray(
+            gruppierteMessdaten.iloc[x]["t2_mean_s"],
+            gruppierteMessdaten.iloc[x]["t2_std_s"],
+        )
+    )
+
+
+def tau_solver(t1, t2):
+    """
+    Berechnet die Zeitkonstante tau aus den Messzeiten t1 (ungebremst)
+    und t2 (gebremst) durch numerische Lösung der Gleichung:
+
+        0.5 * t1**2 = tau * (t2 - tau * (1 - exp(-t2/tau)))
+
+    Parameter:
+        t1 : float   - ungebremste Zeit [s] # BRUDER DANN MACH DAS DOCH AUCH DUMFUCK
+        t2 : float   - gebremste Zeit [s]
+    Rückgabe:
+        tau : float  - Zeitkonstante [s]
+    """
+
+    def f(tau):
+        return 0.5 * t1**2 - tau * (t2 - tau * (1 - np.exp(-t2 / tau)))
+
+    tau_min = 1e-6
+    tau_max = 10 * t2
+
+    try:
+        tau_root = brentq(f, tau_min, tau_max)
+        return tau_root
+    except ValueError:
+        return np.nan
+
+
+def tau_with_max_deviation(t1_uf, t2_uf):
+    """
+    Berechnet tau inkl. Fehler über Differenz-Methode.
+
+    Parameter:
+        t1_uf, t2_uf: ufloat (mit Nominalwert und Standardabweichung)
+
+    Rückgabe:
+        ufloat mit Nominalwert und Fehler
+    """
+    t1_nom, t2_nom = unp.nominal_values(t1_uf), unp.nominal_values(t2_uf)
+    t1_std, t2_std = (
+        unp.std_devs(t1_uf),
+        unp.std_devs(t2_uf),
+    )
+    tau_nom = tau_solver(t1_nom, t2_nom)
+
+    # Alle Kombinationen von ± std
+    t1_vals = [t1_nom - t1_std, t1_nom + t1_std]
+    t2_vals = [t2_nom - t2_std, t2_nom + t2_std]
+
+    tau_extremes = []
+    for t1 in t1_vals:
+        for t2 in t2_vals:
+            tau_extremes.append(tau_solver(t1, t2))
+
+    # Fehler = größte Abweichung vom Nominalwert
+    tau_err = max(abs(t - tau_nom) for t in tau_extremes)
+
+    return unp.uarray(tau_nom, tau_err)
+
+tau_alpha = []
+for i, t1 in enumerate(t1_alpha):
+    tau_i = tau_with_max_deviation(t1, t2_alpha[i])
+    tau_alpha.append(tau_i)
+    print(f"tau{i+1} = {tau_i}")
+
+#zurück in csv datei
+data = {
+    "tau_nominal_s": [unp.nominal_values(t) for t in tau_alpha],
+    "tau_std_s": [unp.std_devs(t) for t in tau_alpha]
+}
+
+df_tau = pd.DataFrame(data)
+folder = r"D:\UUlm\lol\Praktikum1b\Wirbelstrombremse"
+os.makedirs(folder, exist_ok=True)  # erstellt Ordner, falls nicht vorhanden
+filepath = os.path.join(folder, "tau_alpha_results.csv")
+df_tau.to_csv(filepath, index=False)
