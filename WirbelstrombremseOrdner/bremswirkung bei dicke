@@ -1,0 +1,34 @@
+import os
+import numpy as np
+import pandas as pd
+from uncertainties import unumpy as unp
+
+#Messdaten
+messdaten = pd.read_csv(r"D:\UUlm\lol\Praktikum1b\Wirbelstrombremse\messdaten2.csv")
+
+mittelwerte = messdaten.mean()
+standardabweichungen = messdaten.std(ddof=1)
+
+ergebnisse = pd.DataFrame({
+    "Mittelwert [s]": mittelwerte,
+    "Standardabweichung [s]": standardabweichungen,  
+})
+
+t1 = unp.uarray(ergebnisse.iloc[0]["Mittelwert [s]"], ergebnisse.iloc[0]["Standardabweichung [s]"])
+t2 = unp.uarray(ergebnisse.iloc[1]["Mittelwert [s]"], ergebnisse.iloc[1]["Standardabweichung [s]"])
+t3 = unp.uarray(ergebnisse.iloc[2]["Mittelwert [s]"], ergebnisse.iloc[2]["Standardabweichung [s]"])
+
+def a_eff(t):
+    '''berechnung beschleunigung mit bremswirkung'''
+    g = 9.8082
+    theta = np.arctan(13.6/50)
+    a0 = g*np.sin(theta)
+    s = 0.5
+    return a0 - 2*s/(t**2) 
+print(t1)
+print(t2)
+print(t3)
+
+print(a_eff(t1))
+print(a_eff(t2))
+print(a_eff(t3))
