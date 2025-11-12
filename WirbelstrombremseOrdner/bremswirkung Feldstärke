@@ -1,0 +1,62 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from uncertainties import unumpy as unp
+
+messdaten = pd.read_csv(r"D:\UUlm\lol\Praktikum1b\Wirbelstrombremse\messdaten3.csv")
+print(messdaten)
+
+mittelwerte = messdaten.mean()
+standardabweichungen = messdaten.std(ddof=1)
+
+ergebnisse = pd.DataFrame(
+    {
+        "Mittelwert [s]": mittelwerte,
+        "Standardabweichung [s]": standardabweichungen,
+    }
+)
+print(ergebnisse)
+
+t = unp.uarray(
+    ergebnisse["Mittelwert [s]"].values,
+    ergebnisse["Standardabweichung [s]"].values
+)
+
+
+def a_eff(t):
+    """berechnung beschleunigung mit bremswirkung"""
+    g = 9.8082
+    theta = np.arctan(13.6 / 50)
+    a0 = g * np.sin(theta)
+    s = 0.5
+    return a0 - 2 * s / (t**2)
+
+#plot
+B_values = np.array([0,0.284,0.336,0.395,0.447])
+B_std = 0.05 * B_values +10e-6
+B = unp.uarray(B_values,B_std)
+B_fit = np.linspace(min(unp.nominal_values(B)),max(unp.nominal_values(B)),1000)
+
+# Nominalwerte und Unsicherheiten für den Plot
+B_nom = unp.nominal_values(B)
+B_std_val = unp.std_devs(B)
+t_nom = unp.nominal_values(t)
+t_std_val = unp.std_devs(t)
+
+plt.figure(figsize=(8,5))
+
+# Messpunkte mit Fehlerbalken
+plt.errorbar(B_nom, t_nom, xerr=B_std_val, yerr=t_std_val, fmt='o', capsize=5, label='Messwerte')
+
+# Quadratischer Fit (t ~ B^2) als Linie
+coeff = np.polyfit(B_nom, t_nom, 2)
+t_fit = np.polyval(coeff, B_fit)
+plt.plot(B_fit, t_fit, 'r-', label='Quadratischer Fit')
+
+plt.xlabel('Magnetische Flussdichte B [T]')
+plt.ylabel('Ablaufzeit t [s]')
+plt.title('Ablaufzeit vs. Magnetfeldstärke')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
