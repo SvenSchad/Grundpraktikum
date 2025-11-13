@@ -1,0 +1,69 @@
+#Bremswirkung in Abhängigkeit der Geschwindigkeit
+import numpy as np
+import pandas as pd
+from uncertainties import unumpy as unp
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+messdaten = pd.read_csv(r"C:\Users\svens\OneDrive\Python\Grundpraktikum\Wirbelstrombremse\messdaten5.csv")
+höhe_vals = np.array([13.7,16.9,19.4,22.1,25.4,31.3,37.7])
+höhe = unp.uarray(höhe_vals,0.05)
+länge = unp.uarray(50,0.05)
+s = unp.uarray(8.080,0.05)
+
+Winkel = unp.arctan(höhe/länge)
+
+mittelwerte = messdaten.mean()
+standardabweichungen = messdaten.std(ddof=1)
+print(messdaten)
+
+ergebnisse = pd.DataFrame(
+    {
+        "Mittelwert [s]": mittelwerte,
+        "Standardabweichung [s]": standardabweichungen,
+    }
+)
+print(ergebnisse)
+
+t = unp.uarray(
+    ergebnisse["Mittelwert [s]"].values,
+    ergebnisse["Standardabweichung [s]"].values
+)
+
+x = unp.sin(Winkel)
+y = s/t
+x_nom = unp.nominal_values(x)
+x_std = unp.std_devs(x)
+y_nom = unp.nominal_values(y)
+y_std = unp.std_devs(y)
+
+def linear(x, a, b):
+    return a * x + b
+popt_lin, pcov_lin = curve_fit(linear, x_nom, y_nom, sigma=y_std, absolute_sigma=True)
+perr_lin = np.sqrt(np.diag(pcov_lin))
+x_fit_lin = np.linspace(min(x_nom), max(x_nom), 200)
+y_fit_lin = linear(x_fit_lin, *popt_lin)
+
+plt.plot(x_fit_lin, y_fit_lin, label=f'Linear Fit: a={popt_lin[0]:.3g}±{perr_lin[0]:.3g}, b={popt_lin[1]:.3g}±{perr_lin[1]:.3g}')
+plt.errorbar(x_nom,y_nom,xerr=x_std,yerr=y_std, fmt='o', capsize=5, label='Messwerte')
+plt.xlabel('sin(alpha)')
+plt.ylabel('Beschleunigung s/t^2')
+plt.title('Beschleunigung vs. $\\mathrm{sin}(\\alpha)$')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+#berechnung von beta
+m = unp.uarray(29.95e-3 + 28.58e-3, 0.05e-3)
+d = unp.uarray(0.12e-2,0.005e-2)
+sigma = unp.uarray(5.8e7,0.05*5.8e7)
+g = 9.8082
+r = unp.uarray(1.96e-2/2,0.005e-2)
+V = r**2*np.pi*d
+B0 = unp.uarray(0.447,0.05*0.447+10e-6)
+alpha = Winkel[0]
+v_unendlich = s/t[0]
+print(v_unendlich)
+beta = (unp.sin(alpha)*g*m/(v_unendlich*sigma*B0*V))
+print(f"beta={beta:.3e}")
