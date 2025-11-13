@@ -1,0 +1,44 @@
+#Bremswirkung bei verschiedenen Leitfähigkeiten
+import numpy as np
+import pandas as pd
+from uncertainties import unumpy as unp
+import matplotlib.pyplot as plt
+
+messdaten = pd.read_csv(r"C:\Users\svens\OneDrive\Python\Grundpraktikum\Wirbelstrombremse\messdaten4.csv")
+
+mittelwerte = messdaten.mean()
+standardabweichungen = messdaten.std(ddof=1)
+
+ergebnisse = pd.DataFrame(
+    {
+        "Mittelwert [s]": mittelwerte,
+        "Standardabweichung [s]": standardabweichungen,
+    }
+)
+print(ergebnisse)
+
+t = unp.uarray(
+    ergebnisse["Mittelwert [s]"].values,
+    ergebnisse["Standardabweichung [s]"].values
+)
+
+Leitfähigkeit_values = np.array([5.8e7,1.5e7,3.5e7,1e6])
+Leitfähigkeit_std = Leitfähigkeit_values*0.05
+Leitfähigkeit = unp.uarray(Leitfähigkeit_values,Leitfähigkeit_std)
+
+L_fit = np.linspace(min(Leitfähigkeit_values),max(Leitfähigkeit_values),1000)
+L_nom = unp.nominal_values(Leitfähigkeit)
+L_std = unp.std_devs(Leitfähigkeit)
+t_nom = unp.nominal_values(t)
+t_std = unp.std_devs(t)
+t_fit = np.linspace(min(t_nom), max(t_nom),1000)
+
+plt.errorbar(L_nom, t_nom, xerr=L_std, yerr=t_std, fmt='o', capsize=5, label='Messwerte')
+plt.plot(L_fit, t_fit)
+plt.xlabel('Leitfähigkeit sigma')
+plt.ylabel('Ablaufzeit t [s]')
+plt.title('Ablaufzeit vs. Leitfähigkeit')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
