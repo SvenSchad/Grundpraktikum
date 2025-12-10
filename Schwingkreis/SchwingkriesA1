@@ -1,0 +1,84 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+U = np.log(np.array(
+    [
+        53.6,
+        51.2,
+        47.2,
+        44.0,
+        40.8,
+        37.6,
+        34.4,
+        32.0,
+        30.4,
+        28.0,
+        26.4,
+        24.0,
+        22.4,
+        20.8,
+        19.2,
+        18.4,
+        16.8,
+        16.0,
+        15.2,
+        14.4,
+        12.8,
+        12.0,
+        11.2,
+        10.4,
+    ]
+))
+U_real = np.exp(U)
+U_err = U*0.03
+
+dT = 2.05e-3  # s
+n = 24
+t = np.linspace(0, dT, n)
+t_err = t*50e-6
+plt.errorbar(t,U,xerr=t_err,yerr=U_err,fmt='o--',capsize=3)
+
+#regression
+def linear_model(t, a, b):
+    return a*t + b
+
+# Fit
+p, cov = np.polyfit(t, U, 1, cov=True)  # p[0]=a, p[1]=b
+a, b = p
+a_err, b_err = np.sqrt(np.diag(cov))
+
+# Fitkurve
+T = np.linspace(0, dT, 1000)
+U_fit = a*T + np.log(53.6)
+plt.plot(T, U_fit, label=f"Fit: U = {a:.2e} t + {b:.2f}")
+
+# Ausgabe der Parameter
+print("Fit-Ergebnisse:")
+print(f"a = {a:.4e} ± {a_err:.4e}  V/s")
+print(f"b = {b:.4e} ± {b_err:.4e}  V")
+
+
+plt.title("U(t)")
+plt.xlabel("t in s")
+plt.ylabel("log(U) in V or whatever")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+#berechnung logarithmisches dekrement
+def delta(U, t):
+    deltas = []
+    for i in range(len(U) - 1):
+        d = np.log(U[i] / U[i+1]) / (t[i+1] - t[i])   # t[i+1] > t[i]
+        deltas.append(d)
+    return np.array(deltas)
+
+
+
+deltas = delta(U_real,t)
+avgd = np.mean(deltas)
+
+print(deltas)
+print(avgd)
