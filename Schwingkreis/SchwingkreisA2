@@ -1,0 +1,53 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from uncertainties import unumpy as unp
+import pandas as pd
+
+messdaten = pd.read_csv(
+    r"C:\Users\svens\Grundprak\Schwingkreise\MessdatenA2.csv")
+
+freq = unp.uarray(a:= messdaten["Frequenz Wechselspannung"].to_numpy(),a*0.001)
+phase = unp.uarray(messdaten["Phasenverschiebung"].to_numpy(),0.1)
+U_LRC = unp.uarray(b:= messdaten["Spannung Schwingkreis"].to_numpy(), b*0.001+0.01)
+U_Rv = unp.uarray(c:= messdaten ["Spannung Vorwiderstand"].to_numpy(), c*0.001+0.01)
+
+for ()
+
+Rv = 22 # ohm
+I = U_Rv/Rv
+omega = 2*np.pi*freq
+U_LRC_complex = unp.nominal_values(U_LRC) * np.exp(1j*unp.nominal_values(phi_rad))
+Z = U_LRC_complex/unp.nominal_values(I)
+X = Z.real
+Y = Z.imag
+
+#freq filter
+frequenz_zentrum = 1322  
+frequenz_toleranz = 500
+mask = (unp.nominal_values(freq) >= (frequenz_zentrum - frequenz_toleranz)) & \
+       (unp.nominal_values(freq) <= (frequenz_zentrum + frequenz_toleranz))
+freq_filtered = freq[mask]
+phase_filtered = phase[mask]
+omega_filtered = 2 * np.pi * freq_filtered
+phi_filterd = phase_filtered - 180
+phi_filterd = (phi_filterd + 180) % 360 - 180
+phi_rad_filterd = np.deg2rad(unp.nominal_values(phi_filterd))
+
+'''
+#phasenverschiebungsplot um resonanzfrequenz
+plt.figure()
+plt.errorbar(unp.nominal_values(omega_filtered), unp.nominal_values(phase_filtered), xerr=unp.std_devs(omega_filtered),yerr=unp.std_devs(phase_filtered), fmt='o--', capsize=3)
+plt.grid(True)
+plt.xlabel("Kreisfrequenz omega")
+plt.ylabel("Phasenverschiebung")
+plt.legend()
+plt.show()
+'''
+'''
+X_filt = X[3:]
+X_filter = X_filt[:30]
+print(X_filter)
+R = np.mean(X_filter)
+R_err = np.std(X_filter)
+print(f"{R}+-{R_err}")
+'''
